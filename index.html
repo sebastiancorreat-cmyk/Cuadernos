@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuaderno de Economía Internacional - Balanza de Pagos</title>
+    <!-- Tailwind CSS for UI Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            900: '#1e3a8a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styling for mind map nodes and canvas */
+        .mindmap-container {
+            min-height: 520px;
+            position: relative;
+            background-color: #f8fafc;
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .node-card {
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+        .node-card:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+        }
+        .connection-line {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 0;
+            transition: stroke 0.3s ease, stroke-width 0.3s ease;
+        }
+        /* Hide scrollbars for clean notebook feel */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Smooth fade-in modal */
+        @keyframes modalFade {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-modal { animation: modalFade 0.18s ease-out forwards; }
+    </style>
+</head>
+<body class="h-full flex flex-col font-sans text-slate-800 bg-slate-50 antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Top Main Header & Saved Status -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                
+                <!-- Brand / Subject Info -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+                        <i class="fa-solid fa-brain text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md border border-brand-100">Economía Internacional</span>
+                            <span id="classBadge" class="text-xs text-slate-500">Clase 1</span>
+                        </div>
+                        <h1 id="classTitleDisplay" class="text-base sm:text-lg font-bold text-slate-900 truncate max-w-xs sm:max-w-md md:max-w-lg">
+                            Balanza de Pagos 1: Cuenta Corriente y Capital
+                        </h1>
+                    </div>
+                </div>
+
+                <!-- Actions & Save Indicator -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <!-- Save Status Indicator -->
+                    <div id="saveStatus" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-all duration-300">
+                        <i class="fa-solid fa-check-circle mr-1.5 text-emerald-500"></i>
+                        <span id="saveStatusText">Guardado</span>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="hidden md:flex items-center space-x-2">
+                        <button onclick="exportData()" title="Exportar copia de seguridad en JSON" class="p-2 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 text-xs font-medium flex items-center gap-1.5">
+                            <i class="fa-solid fa-download"></i>
+                            <span>Exportar</span>
+                        </button>
+                        <button onclick="openImportModal()" title="Importar copia de seguridad" class="p-2 text-slate-600 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200 text-xs font-medium flex items-center gap-1.5">
+                            <i class="fa-solid fa-upload"></i>
+                            <span>Importar</span>
+                        </button>
+                        <button onclick="confirmReset()" title="Restaurar contenido original del video" class="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-rose-200 text-xs font-medium flex items-center gap-1.5">
+                            <i class="fa-solid fa-rotate-left"></i>
+                            <span>Restaurar</span>
+                        </button>
+                    </div>
+
+                    <!-- Mobile Options Menu Trigger -->
+                    <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                        <i class="fa-solid fa-ellipsis-vertical text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation Bar -->
+        <div class="border-t border-slate-100 bg-white px-4 sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto flex items-center justify-between overflow-x-auto no-scrollbar py-2">
+                <nav class="flex space-x-1 sm:space-x-2" aria-label="Tabs">
+                    <button id="tab-mindmap" onclick="switchTab('mindmap')" class="tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center gap-2 bg-brand-50 text-brand-700 border border-brand-200">
+                        <i class="fa-solid fa-diagram-project"></i>
+                        <span>Mapa Mental</span>
+                    </button>
+                    <button id="tab-notes" onclick="switchTab('notes')" class="tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-2 border border-transparent">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span>📝 Apuntes</span>
+                    </button>
+                    <button id="tab-concepts" onclick="switchTab('concepts')" class="tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-2 border border-transparent">
+                        <i class="fa-solid fa-key"></i>
+                        <span>🔑 Conceptos Clave</span>
+                    </button>
+                    <button id="tab-video" onclick="switchTab('video')" class="tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-2 border border-transparent">
+                        <i class="fa-solid fa-circle-play text-red-500"></i>
+                        <span>Video de Clase</span>
+                    </button>
+                </nav>
+
+                <!-- Quick Toggle Split View for Desktop -->
+                <button onclick="toggleSplitView()" id="splitViewBtn" class="hidden lg:flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-brand-600 px-2.5 py-1 rounded-md hover:bg-slate-100 border border-slate-200">
+                    <i class="fa-solid fa-columns"></i>
+                    <span id="splitViewBtnText">Vista Dividida (Video + Contenido)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown Menu -->
+        <div id="mobileMenu" class="hidden md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-2">
+            <button onclick="exportData(); toggleMobileMenu();" class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2">
+                <i class="fa-solid fa-download text-slate-400"></i> Exportar datos (JSON)
+            </button>
+            <button onclick="openImportModal(); toggleMobileMenu();" class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-lg flex items-center gap-2">
+                <i class="fa-solid fa-upload text-slate-400"></i> Importar datos
+            </button>
+            <button onclick="confirmReset(); toggleMobileMenu();" class="w-full text-left px-3 py-2 text-sm text-rose-600 hover:bg-rose-50 rounded-lg flex items-center gap-2">
+                <i class="fa-solid fa-rotate-left text-rose-500"></i> Restaurar mapa original
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- Split View Container (Dynamic Side-by-Side or Full View) -->
+        <div id="workspaceGrid" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- VIDEO SECTION (Can be expanded or kept on left side) -->
+            <section id="videoSection" class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-brands fa-youtube text-red-500 text-xl"></i>
+                        <span class="font-semibold text-sm">Video de Clase (Econosublime)</span>
+                    </div>
+                    <span class="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">11 min</span>
+                </div>
+                
+                <!-- YouTube Embed Player Container -->
+                <div class="relative w-full aspect-video bg-black">
+                    <iframe id="youtubeIframe" class="w-full h-full absolute inset-0 border-0" 
+                        src="https://www.youtube-nocookie.com/embed/Y0ezf1W9UoE?rel=0" 
+                        title="Video de Economía Internacional" 
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                        allowfullscreen>
+                    </iframe>
+                </div>
+
+                <!-- Video Summary / Note Help Box -->
+                <div class="p-4 bg-slate-50 border-t border-slate-200 text-xs text-slate-600 space-y-2">
+                    <div class="font-semibold text-slate-800 flex items-center justify-between">
+                        <span>💡 Tip de Estudio Visual:</span>
+                        <button onclick="toggleVideoDock()" class="text-brand-600 hover:underline text-[11px]">Ocultar/Mostrar video</button>
+                    </div>
+                    <p>
+                        Puedes reproducir la clase mientras interactúas con el mapa mental a la derecha. Haz doble clic sobre cualquier concepto del mapa para personalizar su texto o añadir notas rápidas.
+                    </p>
+                </div>
+            </section>
+
+            <!-- MAIN STUDY CONTENT (Mind Map, Notes, Concepts) -->
+            <div id="contentSection" class="lg:col-span-7 space-y-6">
+
+                <!-- 1. MIND MAP VIEW -->
+                <div id="view-mindmap" class="space-y-4">
+                    <!-- Mind Map Header Controls -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-sitemap text-brand-600"></i>
+                                Mapa Mental Interactivo
+                            </h2>
+                            <p class="text-xs text-slate-500">Haz doble clic sobre un nodo para editarlo o usa los botones contextuales.</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="openAddNodeModal()" class="px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus"></i>
+                                <span>Agregar Concepto</span>
+                            </button>
+                            <button onclick="rearrangeLayout()" title="Reorganizar vista" class="p-1.5 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mind Map Visual Canvas -->
+                    <div class="mindmap-container w-full rounded-2xl border border-slate-200 shadow-inner p-6 overflow-auto relative min-h-[580px] bg-white" id="mindmapCanvas">
+                        <!-- SVG Layer for Connection Lines -->
+                        <svg id="svgConnections" class="absolute inset-0 w-full h-full pointer-events-none z-0">
+                            <!-- Curved connection lines rendered via JS -->
+                        </svg>
+
+                        <!-- Nodes Container -->
+                        <div id="nodesTree" class="relative z-10 w-full flex flex-col items-center space-y-8 py-4">
+                            <!-- Dynamic Tree Hierarchy rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Legend / Node Color Code -->
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-around gap-2 text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full bg-slate-900"></span>
+                            <span class="text-slate-600 font-medium">Tema Principal</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full bg-brand-600"></span>
+                            <span class="text-slate-600 font-medium">Concepto Principal</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full bg-teal-600"></span>
+                            <span class="text-slate-600 font-medium">Subconcepto</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                            <span class="text-slate-600 font-medium">Ejemplo / Detalle</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. NOTES SECTION VIEW -->
+                <div id="view-notes" class="hidden space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-pen-to-square text-amber-500"></i>
+                                📝 Apuntes del Video
+                            </h2>
+                            <p class="text-xs text-slate-500">Apuntes estructurados organizados por temas de la clase. Editables directamente.</p>
+                        </div>
+                        <button onclick="addNoteBlock()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Nuevo Tema de Apunte</span>
+                        </button>
+                    </div>
+
+                    <!-- Notes Blocks Container -->
+                    <div id="notesContainer" class="space-y-4">
+                        <!-- Dynamic Editable Notes Sections -->
+                    </div>
+                </div>
+
+                <!-- 3. KEY CONCEPTS VIEW -->
+                <div id="view-concepts" class="hidden space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fa-solid fa-key text-emerald-600"></i>
+                                🔑 Conceptos Clave
+                            </h2>
+                            <p class="text-xs text-slate-500">Glosario con definiciones, explicaciones sencillas y ejemplos prácticos.</p>
+                        </div>
+                        <button onclick="openAddConceptModal()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>+ Nuevo Concepto</span>
+                        </button>
+                    </div>
+
+                    <!-- Key Concepts Grid -->
+                    <div id="conceptsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Dynamic Concept Cards -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL 1: ADD / EDIT NODE MODAL -->
+    <div id="nodeModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-100 animate-modal">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 id="nodeModalTitle" class="text-base font-bold text-slate-900">Agregar Concepto</h3>
+                <button onclick="closeNodeModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="nodeForm" onsubmit="saveNodeForm(event)" class="space-y-4">
+                <input type="hidden" id="editNodeId" value="">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nombre del Concepto *</label>
+                    <input type="text" id="nodeNameInput" required placeholder="Ej. Balanza Comercial" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Tipo de Concepto</label>
+                    <select id="nodeTypeInput" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        <option value="main">Concepto Principal</option>
+                        <option value="sub">Subconcepto</option>
+                        <option value="example">Ejemplo / Detalle</option>
+                    </select>
+                </div>
+
+                <div id="parentSelectContainer">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Concepto Padre</label>
+                    <select id="nodeParentInput" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Explicación o Nota Breve</label>
+                    <textarea id="nodeExplanationInput" rows="3" placeholder="Explicación sencilla del concepto..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closeNodeModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ADD / EDIT KEY CONCEPT MODAL -->
+    <div id="conceptModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 border border-slate-100 animate-modal">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 id="conceptModalTitle" class="text-base font-bold text-slate-900">Agregar Concepto Clave</h3>
+                <button onclick="closeConceptModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="conceptForm" onsubmit="saveConceptForm(event)" class="space-y-4">
+                <input type="hidden" id="editConceptId" value="">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Concepto *</label>
+                    <input type="text" id="conceptTermInput" required placeholder="Ej. Déficit Comercial" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Definición Téorica</label>
+                    <textarea id="conceptDefInput" rows="2" placeholder="Definición académica oficial..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Explicación Sencilla</label>
+                    <textarea id="conceptEasyInput" rows="2" placeholder="En palabras simples..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ejemplo Práctico</label>
+                    <input type="text" id="conceptExampleInput" placeholder="Ej. Cuando España compra más petróleo del exterior que el aceite que vende..." class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+                    <button type="button" onclick="closeConceptModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm">Guardar Concepto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 3: CONFIRMATION DIALOG (No native alert/confirm allowed) -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 space-y-4 border border-slate-100 text-center animate-modal">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="confirmTitle" class="text-base font-bold text-slate-900">¿Restaurar contenido inicial?</h3>
+            <p id="confirmMessage" class="text-xs text-slate-600">Se volverán a cargar los apuntes y el mapa mental original del video. Todas tus ediciones personalizadas se perderán.</p>
+            <div class="flex justify-center space-x-3 pt-2">
+                <button id="confirmCancelBtn" onclick="closeConfirmModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                <button id="confirmActionBtn" class="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm">Sí, Restaurar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: IMPORT JSON MODAL -->
+    <div id="importModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4 border border-slate-100 animate-modal">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-base font-bold text-slate-900">Importar Copia de Seguridad</h3>
+                <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-600">Selecciona un archivo JSON generado anteriormente con la opción de exportación.</p>
+            
+            <input type="file" id="jsonFileInput" accept=".json" class="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer">
+
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+                <button onclick="closeImportModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                <button onclick="processImportFile()" class="px-4 py-2 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg shadow-sm">Importar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * INITIAL DATA EXTRACTED FROM THE YOUTUBE LESSON:
+         * "Balanza de pagos 1: cuenta corriente y cuenta capital" - Econosublime
+         * Extensibility structure for future classes (courseData)
+         */
+        const INITIAL_COURSE_DATA = {
+            activeClassId: "clase-1",
+            classes: [
+                {
+                    id: "clase-1",
+                    title: "Balanza de pagos 1: cuenta corriente y cuenta capital",
+                    subject: "Economía Internacional",
+                    videoUrl: "https://www.youtube-nocookie.com/embed/Y0ezf1W9UoE?rel=0",
+                    youtubeId: "Y0ezf1W9UoE",
+                    mindMap: [
+                        {
+                            id: "root",
+                            name: "Balanza de Pagos",
+                            type: "root",
+                            parentId: null,
+                            explanation: "Documento contable que registra todas las transacciones económicas y financieras de un país con el resto del mundo."
+                        },
+                        // Main Concept 1: Cuenta Corriente
+                        {
+                            id: "m1",
+                            name: "Cuenta Corriente",
+                            type: "main",
+                            parentId: "root",
+                            explanation: "Registra los intercambios de bienes, servicios, rentas y transferencias corrientes."
+                        },
+                        {
+                            id: "s1-1",
+                            name: "1. Bienes y Servicios",
+                            type: "sub",
+                            parentId: "m1",
+                            explanation: "Divide en Balanza Comercial (mercancías físicas) y Balanza de Servicios (turismo, transporte, software)."
+                        },
+                        {
+                            id: "e1-1",
+                            name: "Ej: Venta de aceite de oliva al exterior",
+                            type: "example",
+                            parentId: "s1-1",
+                            explanation: "Exportación de bien → Entrada de divisas (Ingreso)."
+                        },
+                        {
+                            id: "s1-2",
+                            name: "2. Rentas Primarias",
+                            type: "sub",
+                            parentId: "m1",
+                            explanation: "Intereses, dividendos y remuneraciones a trabajadores transfronterizos o temporales."
+                        },
+                        {
+                            id: "e1-2",
+                            name: "Ej: Trabajo temporal de un ingeniero extranjero",
+                            type: "example",
+                            parentId: "s1-2",
+                            explanation: "Salario pagado sale del país → Pago de rentas."
+                        },
+                        {
+                            id: "s1-3",
+                            name: "3. Rentas Secundarias",
+                            type: "sub",
+                            parentId: "m1",
+                            explanation: "Transferencias corrientes sin contrapartida directa (entregas de dinero)."
+                        },
+                        {
+                            id: "e1-3",
+                            name: "Ej: Remesas enviadas por emigrantes",
+                            type: "example",
+                            parentId: "s1-3",
+                            explanation: "Envío de dinero a familiares en el exterior."
+                        },
+                        // Main Concept 2: Cuenta de Capital
+                        {
+                            id: "m2",
+                            name: "Cuenta de Capital",
+                            type: "main",
+                            parentId: "root",
+                            explanation: "Tiene menor volumen; registra transferencias de capital y activos no financieros no producidos."
+                        },
+                        {
+                            id: "s2-1",
+                            name: "Transferencias de Capital",
+                            type: "sub",
+                            parentId: "m2",
+                            explanation: "Ayudas destinadas a realizar inversiones fijas o infraestructuras."
+                        },
+                        {
+                            id: "e2-1",
+                            name: "Ej: Fondos UE para trenes de alta velocidad",
+                            type: "example",
+                            parentId: "s2-1",
+                            explanation: "Financiación pública recibida para inversión en el país."
+                        },
+                        {
+                            id: "s2-2",
+                            name: "Activos No Financieros",
+                            type: "sub",
+                            parentId: "m2",
+                            explanation: "Compra o venta de patentes, marcas, derechos de autor o terrenos."
+                        },
+                        // Main Concept 3: Reglas de Contabilidad
+                        {
+                            id: "m3",
+                            name: "Contabilidad y Saldos",
+                            type: "main",
+                            parentId: "root",
+                            explanation: "Aplica sistema de partida doble con columnas de Ingresos y Pagos."
+                        },
+                        {
+                            id: "s3-1",
+                            name: "Ingresos vs Pagos",
+                            type: "sub",
+                            parentId: "m3",
+                            explanation: "Ingreso: entrada de dinero. Pago: salida de dinero hacia el exterior."
+                        },
+                        {
+                            id: "s3-2",
+                            name: "Capacidad vs Necesidad",
+                            type: "sub",
+                            parentId: "m3",
+                            explanation: "Saldo positivo = Superávit (Capacidad de financiación). Saldo negativo = Déficit (Necesidad de financiación)."
+                        }
+                    ],
+                    notes: [
+                        {
+                            id: "n1",
+                            title: "1. ¿Qué es la Balanza de Pagos y cuál es su principio contable?",
+                            content: "Es el documento contable oficial que registra todas las operaciones comerciales y financieras entre los residentes de un país y el resto del mundo durante un periodo. Funciona mediante el principio de partida doble: cada operación genera una doble anotación (el valor del bien/servicio intercambiado y el movimiento financiero correspondiente)."
+                        },
+                        {
+                            id: "n2",
+                            title: "2. Estructura de la Cuenta Corriente",
+                            content: "Se divide en 3 subbalanzas clave:\n- Balanza de Bienes y Servicios: incluye la Balanza Comercial (importaciones y exportaciones de bienes) y la de Servicios (fletes, turismo, seguros, licencias de software).\n- Balanza de Rentas Primarias: registra rentas del trabajo (salarios transfronterizos) y del capital (dividendos, intereses de préstamos).\n- Balanza de Rentas Secundarias: entregas sin contrapartida directa, como ayudas del Estado o remesas de dinero de trabajadores a sus países de origen."
+                        },
+                        {
+                            id: "n3",
+                            title: "3. La Cuenta de Capital",
+                            content: "Representa un volumen menor que la cuenta corriente pero es fundamental para la capacidad productiva de largo plazo. Incluye:\n1) Transferencias de capital (ejemplo: fondos de cohesión e infraestructuras de la Unión Europea).\n2) Compra/venta de activos no financieros no producidos (patentes, marcas comerciales, derechos de autor)."
+                        },
+                        {
+                            id: "n4",
+                            title: "4. Anotación Contable (Ingresos y Pagos) y Saldos",
+                            content: "- Columna de Ingresos: Anota todas las entradas de dinero al país (exportación de bienes/servicios, recepción de rentas o transferencias).\n- Columna de Pagos: Anota las salidas de dinero hacia el exterior (importación de bienes/servicios, pago de rentas).\n- Saldo = Ingresos - Pagos. Un saldo positivo acumulado da Capacidad de Financiación (el país presta al exterior o acumula reservas de divisas). Un saldo negativo refleja Necesidad de Financiación (el país requiere préstamos o pierde divisas)."
+                        }
+                    ],
+                    concepts: [
+                        {
+                            id: "c1",
+                            term: "Balanza de Pagos",
+                            definition: "Documento contable que registra sistemáticamente el conjunto de transacciones económicas y financieras realizadas entre los residentes de un país y el resto del mundo.",
+                            easyExplain: "Es el libro contable de todo lo que un país compra, vende, presta o recibe del extranjero.",
+                            example: "Registro de todas las exportaciones españolas a América y las compras de petróleo a Oriente Medio."
+                        },
+                        {
+                            id: "c2",
+                            term: "Cuenta Corriente",
+                            definition: "Sección de la balanza de pagos que contabiliza las exportaciones e importaciones de bienes y servicios, así como las rentas y transferencias corrientes.",
+                            easyExplain: "Registra los intercambios cotidianos de cosas reales y dinero por trabajo o regalos.",
+                            example: "Importación de automóviles desde Alemania e ingresos por turismo extranjero en Cancún o España."
+                        },
+                        {
+                            id: "c3",
+                            term: "Superávit Comercial",
+                            definition: "Situación en la que el valor de las exportaciones de bienes de un país supera al valor de sus importaciones en un periodo determinado.",
+                            easyExplain: "Cuando vendemos más mercancías al extranjero de las que les compramos a ellos.",
+                            example: "Si exportamos 100 millones en café e importamos 70 millones en vehículos, hay superávit de 30 millones."
+                        },
+                        {
+                            id: "c4",
+                            term: "Transferencias de Capital",
+                            definition: "Aportaciones monetarias o en especie realizadas sin contrapartida con el fin específico de financiar la adquisición de activos fijos.",
+                            easyExplain: "Subvenciones o regalos monetarios diseñados para obras e infraestructuras de largo plazo.",
+                            example: "Subvenciones de la Unión Europea para la construcción de autopistas o líneas de tren de alta velocidad."
+                        },
+                        {
+                            id: "c5",
+                            term: "Capacidad de Financiación",
+                            definition: "Condición económica que se genera cuando el saldo positivo conjunto de la cuenta corriente y de capital permite al país financiar al exterior o acumular reservas.",
+                            easyExplain: "Ingresa más dinero del que sale, por lo que el país puede ahorrar o prestar divisas a otros.",
+                            example: "Un país con superávit utiliza sus divisas sobrantes para comprar bonos de deuda en el exterior."
+                        }
+                    ]
+                }
+            ]
+        };
+
+        const STORAGE_KEY = 'econ_inter_study_data_v1';
+        let appData = null;
+        let isSplitView = true;
+
+        // Load data from LocalStorage or initialize with defaults
+        function initData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                try {
+                    appData = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Error parsing saved data:', e);
+                    appData = JSON.parse(JSON.stringify(INITIAL_COURSE_DATA));
+                }
+            } else {
+                appData = JSON.parse(JSON.stringify(INITIAL_COURSE_DATA));
+            }
+            saveDataLocally();
+        }
+
+        // Save data to localStorage with visual notification
+        function saveDataLocally() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+                showSaveStatus(true);
+            } catch (e) {
+                console.error('Error saving data:', e);
+                showSaveStatus(false);
+            }
+        }
+
+        function showSaveStatus(success) {
+            const el = document.getElementById('saveStatus');
+            const txt = document.getElementById('saveStatusText');
+            if (success) {
+                el.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 transition-all duration-300";
+                txt.textContent = "✓ Guardado";
+            } else {
+                el.className = "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 transition-all duration-300";
+                txt.textContent = "Error al guardar";
+            }
+        }
+
+        function getCurrentClass() {
+            return appData.classes.find(c => c.id === appData.activeClassId) || appData.classes[0];
+        }
+
+        function switchTab(tabName) {
+            const tabs = ['mindmap', 'notes', 'concepts', 'video'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                const view = document.getElementById(`view-${t}`);
+                
+                if (t === tabName) {
+                    if (btn) btn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center gap-2 bg-brand-50 text-brand-700 border border-brand-200 shadow-sm";
+                    if (view) view.classList.remove('hidden');
+                } else {
+                    if (btn) btn.className = "tab-btn px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all flex items-center gap-2 border border-transparent";
+                    if (view) view.classList.add('hidden');
+                }
+            });
+
+            // If user clicked Video tab directly, ensure video section is visible even in non-split
+            if (tabName === 'video') {
+                const videoSec = document.getElementById('videoSection');
+                videoSec.classList.remove('hidden');
+                videoSec.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            if (tabName === 'mindmap') {
+                setTimeout(renderMindMap, 50);
+            }
+        }
+
+        function toggleSplitView() {
+            isSplitView = !isSplitView;
+            const grid = document.getElementById('workspaceGrid');
+            const videoSec = document.getElementById('videoSection');
+            const contentSec = document.getElementById('contentSection');
+            const btnText = document.getElementById('splitViewBtnText');
+
+            if (isSplitView) {
+                grid.className = "grid grid-cols-1 lg:grid-cols-12 gap-6 items-start";
+                videoSec.className = "lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col sticky top-20";
+                contentSec.className = "lg:col-span-7 space-y-6";
+                btnText.textContent = "Vista Solo Contenido";
+            } else {
+                grid.className = "grid grid-cols-1 gap-6 items-start";
+                videoSec.className = "hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col";
+                contentSec.className = "col-span-1 space-y-6";
+                btnText.textContent = "Mostrar Video Lateral";
+            }
+            setTimeout(renderMindMap, 100);
+        }
+
+        function toggleVideoDock() {
+            const videoSec = document.getElementById('videoSection');
+            videoSec.classList.toggle('hidden');
+            setTimeout(renderMindMap, 100);
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        /**
+         * MIND MAP RENDERING ENGINE
+         * Builds a visual hierarchical tree with styled nodes and SVG curves
+         */
+        function renderMindMap() {
+            const cls = getCurrentClass();
+            const container = document.getElementById('nodesTree');
+            const svg = document.getElementById('svgConnections');
+            if (!container || !cls) return;
+
+            container.innerHTML = '';
+            svg.innerHTML = '';
+
+            const nodesMap = {};
+            cls.mindMap.forEach(n => nodesMap[n.id] = { ...n, children: [] });
+
+            // Build hierarchy tree
+            let rootNode = null;
+            cls.mindMap.forEach(n => {
+                if (n.parentId && nodesMap[n.parentId]) {
+                    nodesMap[n.parentId].children.push(nodesMap[n.id]);
+                } else if (n.type === 'root' || !n.parentId) {
+                    rootNode = nodesMap[n.id];
+                }
+            });
+
+            if (!rootNode) return;
+
+            // Render Node HTML Element recursively
+            const treeHTML = buildNodeTreeHTML(rootNode);
+            container.innerHTML = treeHTML;
+
+            // Draw connecting SVG lines after DOM rendering
+            requestAnimationFrame(() => {
+                drawConnections(rootNode.id);
+            });
+        }
+
+        function buildNodeTreeHTML(node) {
+            const typeStyles = {
+                root: "bg-slate-900 text-white border-slate-800 shadow-lg text-sm sm:text-base px-5 py-3 rounded-2xl font-bold",
+                main: "bg-brand-600 text-white border-brand-700 shadow-md text-xs sm:text-sm px-4 py-2.5 rounded-xl font-semibold",
+                sub: "bg-teal-50 text-teal-900 border-teal-200 hover:border-teal-300 shadow-sm text-xs px-3.5 py-2 rounded-lg font-medium",
+                example: "bg-amber-50 text-amber-900 border-amber-200 hover:border-amber-300 text-[11px] px-3 py-1.5 rounded-lg italic"
+            };
+
+            const typeBadges = {
+                root: '<span class="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider mb-1 inline-block">Tema Principal</span>',
+                main: '<span class="text-[10px] bg-white/20 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider mb-1 inline-block">Concepto Principal</span>',
+                sub: '<span class="text-[10px] bg-teal-200/60 text-teal-800 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider mb-1 inline-block">Subconcepto</span>',
+                example: '<span class="text-[10px] bg-amber-200/60 text-amber-800 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider mb-1 inline-block">Ejemplo</span>'
+            };
+
+            const nodeStyle = typeStyles[node.type] || typeStyles.sub;
+            const badge = typeBadges[node.type] || '';
+
+            let childrenHTML = '';
+            if (node.children && node.children.length > 0) {
+                const childItems = node.children.map(child => buildNodeTreeHTML(child)).join('');
+                childrenHTML = `<div class="flex flex-wrap justify-center gap-4 sm:gap-6 pt-6 relative">${childItems}</div>`;
+            }
+
+            return `
+                <div class="flex flex-col items-center group relative" id="node-wrapper-${node.id}">
+                    <div id="node-card-${node.id}" 
+                         ondblclick="openEditNodeModal('${node.id}')"
+                         class="node-card ${nodeStyle} border max-w-xs text-center relative z-10 flex flex-col items-center transition-all">
+                        
+                        ${badge}
+                        <div class="font-bold leading-snug">${escapeHtml(node.name)}</div>
+                        
+                        ${node.explanation ? `<p class="mt-1 text-[11px] opacity-90 line-clamp-3 font-normal">${escapeHtml(node.explanation)}</p>` : ''}
+
+                        <!-- Quick Context Menu Buttons on Hover -->
+                        <div class="mt-2 pt-1 border-t border-current/20 flex items-center space-x-2 text-[10px] opacity-90 group-hover:opacity-100">
+                            <button onclick="event.stopPropagation(); openAddChildModal('${node.id}')" title="Agregar subconcepto" class="hover:underline flex items-center gap-0.5">
+                                <i class="fa-solid fa-plus text-[9px]"></i> Subnodo
+                            </button>
+                            <span>•</span>
+                            <button onclick="event.stopPropagation(); openEditNodeModal('${node.id}')" title="Editar nodo" class="hover:underline">
+                                <i class="fa-solid fa-pen text-[9px]"></i> Editar
+                            </button>
+                            ${node.type !== 'root' ? `
+                                <span>•</span>
+                                <button onclick="event.stopPropagation(); deleteNode('${node.id}')" title="Eliminar nodo" class="hover:underline text-rose-300">
+                                    <i class="fa-solid fa-trash text-[9px]"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    ${childrenHTML}
+                </div>
+            `;
+        }
+
+        function drawConnections(parentId) {
+            const cls = getCurrentClass();
+            const svg = document.getElementById('svgConnections');
+            const canvas = document.getElementById('mindmapCanvas');
+            if (!svg || !canvas) return;
+
+            const canvasRect = canvas.getBoundingClientRect();
+
+            cls.mindMap.forEach(node => {
+                if (node.parentId) {
+                    const parentCard = document.getElementById(`node-card-${node.parentId}`);
+                    const childCard = document.getElementById(`node-card-${node.id}`);
+
+                    if (parentCard && childCard) {
+                        const pRect = parentCard.getBoundingClientRect();
+                        const cRect = childCard.getBoundingClientRect();
+
+                        // Calculate points relative to SVG canvas
+                        const x1 = (pRect.left + pRect.width / 2) - canvasRect.left + canvas.scrollLeft;
+                        const y1 = pRect.bottom - canvasRect.top + canvas.scrollTop;
+                        
+                        const x2 = (cRect.left + cRect.width / 2) - canvasRect.left + canvas.scrollLeft;
+                        const y2 = cRect.top - canvasRect.top + canvas.scrollTop;
+
+                        // Smooth Bezier Curve Path
+                        const midY = y1 + (y2 - y1) / 2;
+                        const pathD = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
+
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('d', pathD);
+                        path.setAttribute('fill', 'none');
+                        path.setAttribute('stroke', node.type === 'example' ? '#f59e0b' : '#94a3b8');
+                        path.setAttribute('stroke-width', node.type === 'example' ? '1.5' : '2');
+                        path.setAttribute('stroke-dasharray', node.type === 'example' ? '4,4' : 'none');
+                        path.setAttribute('class', 'connection-line');
+                        
+                        svg.appendChild(path);
+                    }
+                }
+            });
+        }
+
+        function rearrangeLayout() {
+            renderMindMap();
+        }
+
+        window.addEventListener('resize', () => {
+            requestAnimationFrame(renderMindMap);
+        });
+
+        function openAddNodeModal() {
+            document.getElementById('nodeModalTitle').textContent = "Agregar Concepto al Mapa";
+            document.getElementById('editNodeId').value = "";
+            document.getElementById('nodeNameInput').value = "";
+            document.getElementById('nodeExplanationInput').value = "";
+            document.getElementById('nodeTypeInput').value = "sub";
+            
+            populateParentDropdown();
+            document.getElementById('nodeModal').classList.remove('hidden');
+        }
+
+        function openAddChildModal(parentId) {
+            openAddNodeModal();
+            document.getElementById('nodeParentInput').value = parentId;
+        }
+
+        function openEditNodeModal(nodeId) {
+            const cls = getCurrentClass();
+            const node = cls.mindMap.find(n => n.id === nodeId);
+            if (!node) return;
+
+            document.getElementById('nodeModalTitle').textContent = "Editar Concepto";
+            document.getElementById('editNodeId').value = node.id;
+            document.getElementById('nodeNameInput').value = node.name;
+            document.getElementById('nodeExplanationInput').value = node.explanation || "";
+            document.getElementById('nodeTypeInput').value = node.type || "sub";
+
+            populateParentDropdown(node.id);
+            if (node.parentId) {
+                document.getElementById('nodeParentInput').value = node.parentId;
+            }
+
+            document.getElementById('nodeModal').classList.remove('hidden');
+        }
+
+        function populateParentDropdown(excludeId = null) {
+            const cls = getCurrentClass();
+            const select = document.getElementById('nodeParentInput');
+            select.innerHTML = '';
+
+            cls.mindMap.forEach(n => {
+                if (n.id !== excludeId) {
+                    const opt = document.createElement('option');
+                    opt.value = n.id;
+                    opt.textContent = `${n.type === 'root' ? '⭐ ' : ''}${n.name}`;
+                    select.appendChild(opt);
+                }
+            });
+        }
+
+        function closeNodeModal() {
+            document.getElementById('nodeModal').classList.add('hidden');
+        }
+
+        function saveNodeForm(e) {
+            e.preventDefault();
+            const cls = getCurrentClass();
+            const editId = document.getElementById('editNodeId').value;
+            const name = document.getElementById('nodeNameInput').value.trim();
+            const type = document.getElementById('nodeTypeInput').value;
+            const parentId = document.getElementById('nodeParentInput').value;
+            const explanation = document.getElementById('nodeExplanationInput').value.trim();
+
+            if (!name) return;
+
+            if (editId) {
+                // Edit existing
+                const node = cls.mindMap.find(n => n.id === editId);
+                if (node) {
+                    node.name = name;
+                    node.type = type;
+                    if (node.type !== 'root') node.parentId = parentId;
+                    node.explanation = explanation;
+                }
+            } else {
+                // Create new node
+                const newNode = {
+                    id: 'node-' + Date.now(),
+                    name: name,
+                    type: type,
+                    parentId: parentId,
+                    explanation: explanation
+                };
+                cls.mindMap.push(newNode);
+            }
+
+            saveDataLocally();
+            closeNodeModal();
+            renderMindMap();
+        }
+
+        function deleteNode(nodeId) {
+            const cls = getCurrentClass();
+            const nodeIndex = cls.mindMap.findIndex(n => n.id === nodeId);
+            if (nodeIndex === -1) return;
+
+            const node = cls.mindMap[nodeIndex];
+            if (node.type === 'root') return; // Cannot delete root
+
+            showConfirmModal(
+                "¿Eliminar concepto?",
+                `¿Estás seguro de eliminar "${node.name}" y reorganizar sus subconceptos?`,
+                () => {
+                    // Reassign children to parent
+                    cls.mindMap.forEach(n => {
+                        if (n.parentId === nodeId) {
+                            n.parentId = node.parentId;
+                        }
+                    });
+                    cls.mindMap.splice(nodeIndex, 1);
+                    saveDataLocally();
+                    renderMindMap();
+                }
+            );
+        }
+
+        /**
+         * NOTES SECTION ENGINE
+         * Renders editable notes blocks that auto-save on input/blur
+         */
+        function renderNotes() {
+            const cls = getCurrentClass();
+            const container = document.getElementById('notesContainer');
+            if (!container || !cls) return;
+
+            container.innerHTML = '';
+
+            cls.notes.forEach((note, index) => {
+                const noteCard = document.createElement('div');
+                noteCard.className = "bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 relative transition-all hover:border-amber-200";
+                
+                noteCard.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <input type="text" 
+                               value="${escapeHtml(note.title)}" 
+                               onchange="updateNoteTitle('${note.id}', this.value)"
+                               placeholder="Título de la sección..." 
+                               class="text-sm font-bold text-slate-900 w-full bg-transparent border-b border-transparent hover:border-slate-300 focus:border-amber-500 focus:outline-none py-1 mr-2">
+                        
+                        <button onclick="deleteNoteBlock('${note.id}')" title="Eliminar tema de apunte" class="text-slate-300 hover:text-rose-500 text-xs p-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+
+                    <textarea onchange="updateNoteContent('${note.id}', this.value)"
+                              rows="4" 
+                              placeholder="Escribe aquí tus apuntes sencillos..." 
+                              class="w-full text-xs sm:text-sm text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200 focus:bg-white focus:ring-2 focus:ring-amber-400 focus:outline-none transition-all leading-relaxed">${escapeHtml(note.content)}</textarea>
+                `;
+                container.appendChild(noteCard);
+            });
+        }
+
+        function updateNoteTitle(id, newTitle) {
+            const cls = getCurrentClass();
+            const note = cls.notes.find(n => n.id === id);
+            if (note) {
+                note.title = newTitle;
+                saveDataLocally();
+            }
+        }
+
+        function updateNoteContent(id, newContent) {
+            const cls = getCurrentClass();
+            const note = cls.notes.find(n => n.id === id);
+            if (note) {
+                note.content = newContent;
+                saveDataLocally();
+            }
+        }
+
+        function addNoteBlock() {
+            const cls = getCurrentClass();
+            const newNote = {
+                id: 'note-' + Date.now(),
+                title: `${cls.notes.length + 1}. Nuevo Tema de Apunte`,
+                content: "Escribe aquí tus explicaciones, observaciones o ejemplos adicionales..."
+            };
+            cls.notes.push(newNote);
+            saveDataLocally();
+            renderNotes();
+        }
+
+        function deleteNoteBlock(id) {
+            const cls = getCurrentClass();
+            showConfirmModal(
+                "¿Eliminar apunte?",
+                "¿Estás seguro de borrar este tema de tus apuntes?",
+                () => {
+                    cls.notes = cls.notes.filter(n => n.id !== id);
+                    saveDataLocally();
+                    renderNotes();
+                }
+            );
+        }
+
+        /**
+         * KEY CONCEPTS ENGINE
+         */
+        function renderConcepts() {
+            const cls = getCurrentClass();
+            const container = document.getElementById('conceptsContainer');
+            if (!container || !cls) return;
+
+            container.innerHTML = '';
+
+            cls.concepts.forEach(c => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between hover:border-emerald-300 transition-all";
+                card.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex items-start justify-between gap-2">
+                            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-bookmark text-emerald-600 text-xs"></i>
+                                ${escapeHtml(c.term)}
+                            </h3>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="openEditConceptModal('${c.id}')" title="Editar concepto" class="text-slate-400 hover:text-emerald-600 text-xs p-1">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button onclick="deleteConcept('${c.id}')" title="Eliminar concepto" class="text-slate-400 hover:text-rose-500 text-xs p-1">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        ${c.definition ? `<p class="text-xs text-slate-600 font-medium bg-slate-50 p-2.5 rounded-lg border border-slate-100">${escapeHtml(c.definition)}</p>` : ''}
+                        
+                        ${c.easyExplain ? `
+                            <div class="text-xs text-slate-700">
+                                <span class="font-semibold text-emerald-700">En sencillo:</span> ${escapeHtml(c.easyExplain)}
+                            </div>
+                        ` : ''}
+
+                        ${c.example ? `
+                            <div class="text-[11px] text-amber-800 bg-amber-50/70 p-2 rounded-md border border-amber-100 flex items-start gap-1.5">
+                                <i class="fa-solid fa-lightbulb text-amber-500 mt-0.5"></i>
+                                <span><strong>Ejemplo:</strong> ${escapeHtml(c.example)}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openAddConceptModal() {
+            document.getElementById('conceptModalTitle').textContent = "Agregar Concepto Clave";
+            document.getElementById('editConceptId').value = "";
+            document.getElementById('conceptTermInput').value = "";
+            document.getElementById('conceptDefInput').value = "";
+            document.getElementById('conceptEasyInput').value = "";
+            document.getElementById('conceptExampleInput').value = "";
+            document.getElementById('conceptModal').classList.remove('hidden');
+        }
+
+        function openEditConceptModal(id) {
+            const cls = getCurrentClass();
+            const concept = cls.concepts.find(c => c.id === id);
+            if (!concept) return;
+
+            document.getElementById('conceptModalTitle').textContent = "Editar Concepto Clave";
+            document.getElementById('editConceptId').value = concept.id;
+            document.getElementById('conceptTermInput').value = concept.term;
+            document.getElementById('conceptDefInput').value = concept.definition || "";
+            document.getElementById('conceptEasyInput').value = concept.easyExplain || "";
+            document.getElementById('conceptExampleInput').value = concept.example || "";
+            document.getElementById('conceptModal').classList.remove('hidden');
+        }
+
+        function closeConceptModal() {
+            document.getElementById('conceptModal').classList.add('hidden');
+        }
+
+        function saveConceptForm(e) {
+            e.preventDefault();
+            const cls = getCurrentClass();
+            const editId = document.getElementById('editConceptId').value;
+            const term = document.getElementById('conceptTermInput').value.trim();
+            const def = document.getElementById('conceptDefInput').value.trim();
+            const easy = document.getElementById('conceptEasyInput').value.trim();
+            const example = document.getElementById('conceptExampleInput').value.trim();
+
+            if (!term) return;
+
+            if (editId) {
+                const concept = cls.concepts.find(c => c.id === editId);
+                if (concept) {
+                    concept.term = term;
+                    concept.definition = def;
+                    concept.easyExplain = easy;
+                    concept.example = example;
+                }
+            } else {
+                cls.concepts.push({
+                    id: 'concept-' + Date.now(),
+                    term: term,
+                    definition: def,
+                    easyExplain: easy,
+                    example: example
+                });
+            }
+
+            saveDataLocally();
+            closeConceptModal();
+            renderConcepts();
+        }
+
+        function deleteConcept(id) {
+            const cls = getCurrentClass();
+            showConfirmModal(
+                "¿Eliminar concepto clave?",
+                "¿Estás seguro de eliminar este concepto del glosario?",
+                () => {
+                    cls.concepts = cls.concepts.filter(c => c.id !== id);
+                    saveDataLocally();
+                    renderConcepts();
+                }
+            );
+        }
+
+        /**
+         * BACKUP / EXPORT / IMPORT ENGINE
+         */
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `economia_internacional_balanza_pagos_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function openImportModal() {
+            document.getElementById('importModal').classList.remove('hidden');
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').classList.add('hidden');
+        }
+
+        function processImportFile() {
+            const fileInput = document.getElementById('jsonFileInput');
+            if (!fileInput.files || fileInput.files.length === 0) return;
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported && imported.classes && Array.isArray(imported.classes)) {
+                        appData = imported;
+                        saveDataLocally();
+                        closeImportModal();
+                        initApp();
+                    } else {
+                        showConfirmModal("Archivo no válido", "El archivo JSON no tiene la estructura de cuaderno de estudio esperada.", () => {});
+                    }
+                } catch (err) {
+                    console.error("Error importing file:", err);
+                    showConfirmModal("Error de lectura", "No se pudo procesar el archivo JSON.", () => {});
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        function confirmReset() {
+            showConfirmModal(
+                "¿Restaurar contenido inicial?",
+                "Esta acción borrará tus ediciones y restaurará el mapa mental, apuntes y conceptos originales de la clase.",
+                () => {
+                    appData = JSON.parse(JSON.stringify(INITIAL_COURSE_DATA));
+                    saveDataLocally();
+                    initApp();
+                }
+            );
+        }
+
+        // Custom Modal Confirmation Replacement for native alert/confirm
+        function showConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            
+            const actionBtn = document.getElementById('confirmActionBtn');
+            actionBtn.onclick = function() {
+                onConfirm();
+                closeConfirmModal();
+            };
+
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        // Utility: HTML Escaper
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function initApp() {
+            initData();
+            const cls = getCurrentClass();
+
+            // Update UI Title
+            document.getElementById('classTitleDisplay').textContent = cls.title;
+
+            // Render all sections
+            renderMindMap();
+            renderNotes();
+            renderConcepts();
+        }
+
+        // Run bootstrap on window load
+        window.onload = function() {
+            initApp();
+        };
+    </script>
+</body>
+</html>
